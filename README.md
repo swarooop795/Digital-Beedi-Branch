@@ -1,4 +1,4 @@
-# Digital Beedi Branch 
+# Digital Beedi Branch Management System
 
 A complete digital solution to replace traditional manual processes in the beedi industry.
 
