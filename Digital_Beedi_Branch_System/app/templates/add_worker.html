@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Add Worker</h2>
+<form method="post">
+    <div class="mb-3">
+        <label for="name" class="form-label">Name</label>
+        <input type="text" class="form-control" id="name" name="name" required>
+    </div>
+    <div class="mb-3">
+        <label for="contact" class="form-label">Contact</label>
+        <input type="text" class="form-control" id="contact" name="contact" placeholder="Mobile number (used as username)">
+    </div>
+    <div class="mb-3">
+        <label for="address" class="form-label">Address</label>
+        <input type="text" class="form-control" id="address" name="address">
+    </div>
+    <div class="mb-3">
+        <label for="aadhar_number" class="form-label">Aadhar Number</label>
+        <input type="text" class="form-control" id="aadhar_number" name="aadhar_number">
+    </div>
+    <hr/>
+    <h5>Optional: Create login for worker</h5>
+    <p class="small text-muted">Provide a username (mobile) to allow the worker to login via OTP. If you want password login, provide a password as well.</p>
+    <div class="mb-3">
+        <label for="username" class="form-label">Mobile Number (username)</label>
+        <input type="text" class="form-control" id="username" name="username" placeholder="e.g. 9876543210">
+    </div>
+    <div class="mb-3">
+        <label for="password" class="form-label">Password (optional)</label>
+        <input type="password" class="form-control" id="password" name="password">
+    </div>
+    <hr/>
+    <div class="mb-3">
+        <label for="bank_account" class="form-label">Bank Account Number</label>
+        <input type="text" class="form-control" id="bank_account" name="bank_account" placeholder="Only last 4 digits will be shown to workers">
+    </div>
+    <div class="mb-3">
+        <label for="contractor" class="form-label">Contractor / Branch</label>
+        <input type="text" class="form-control" id="contractor" name="contractor">
+    </div>
+    <button type="submit" class="btn btn-primary">Add Worker</button>
+</form>
+{% endblock %}

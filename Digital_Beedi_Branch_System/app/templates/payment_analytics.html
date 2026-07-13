@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Payment Analytics</h2>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Payments</h5>
+                <h3 class="mb-0">₹{{ total_amount }}</h3>
+                <small>Last 30 days</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Paid Entries</h5>
+                <h3 class="mb-0">{{ paid_count }}</h3>
+                <small>Last 30 days</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <h5 class="card-title">Pending Payments</h5>
+                <h3 class="mb-0">{{ pending_count }}</h3>
+                <small>Total unpaid entries</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Average Payment</h5>
+                <h3 class="mb-0">₹{{ average_payment }}</h3>
+                <small>Per transaction</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Payment Methods Distribution</h5>
+                <canvas id="paymentMethodsChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Daily Payment Trends</h5>
+                <canvas id="paymentTrendsChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Top Workers by Earnings</h5>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Worker Name</th>
+                        <th>Total Earnings</th>
+                        <th>Total Beedis</th>
+                        <th>Payment Status</th>
+                        <th>Preferred Payment Method</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for worker in top_workers %}
+                    <tr>
+                        <td>{{ worker.name }}</td>
+                        <td>₹{{ worker.total_earnings }}</td>
+                        <td>{{ worker.total_beedis }}</td>
+                        <td>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar bg-success" 
+                                     style="width: {{ worker.payment_ratio }}%">
+                                    {{ worker.payment_ratio }}%
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ worker.preferred_method }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Recent Payments</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Worker</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in recent_payments %}
+                            <tr>
+                                <td>{{ payment.timestamp }}</td>
+                                <td>{{ payment.worker_name }}</td>
+                                <td>₹{{ payment.amount }}</td>
+                                <td>{{ payment.method }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Payment Schedule</h5>
+                <div id="calendar"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Payment Methods Chart
+const methodsCtx = document.getElementById('paymentMethodsChart').getContext('2d');
+new Chart(methodsCtx, {
+    type: 'pie',
+    data: {
+        labels: {{ payment_methods_labels | tojson }},
+        datasets: [{
+            data: {{ payment_methods_data | tojson }},
+            backgroundColor: ['#ff6384', '#36a2eb', '#ffce56']
+        }]
+    }
+});
+
+// Payment Trends Chart
+const trendsCtx = document.getElementById('paymentTrendsChart').getContext('2d');
+new Chart(trendsCtx, {
+    type: 'line',
+    data: {
+        labels: {{ payment_trends_labels | tojson }},
+        datasets: [{
+            label: 'Daily Payments',
+            data: {{ payment_trends_data | tojson }},
+            borderColor: '#36a2eb',
+            tension: 0.1
+        }]
+    },
+    options: {
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

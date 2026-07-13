@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Admin Dashboard</h2>
+<p>Welcome, Admin! Here you can manage workers, beedi entries, view wage calculations, and manage your todo list.</p>
+<a href="/workers" class="btn btn-primary">Manage Workers</a>
+<a href="/add-worker" class="btn btn-secondary">Add Worker</a>
+<a href="/beedi-entry" class="btn btn-success">Add Beedi Entry</a>
+<a href="/log-collection" class="btn btn-info">Log Daily Collection & Payment</a>
+<a href="/todos" class="btn btn-warning">Todo List</a>
+{% endblock %}

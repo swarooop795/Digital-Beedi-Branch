@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h3>Edit Worker Details</h3>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('main.update_worker', worker_id=worker['id']) }}">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Name</label>
+                    <input type="text" class="form-control" id="name" name="name" value="{{ worker['name'] }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="age" class="form-label">Age</label>
+                    <input type="number" class="form-control" id="age" name="age" value="{{ worker['age'] | default('') }}">
+                </div>
+                <div class="mb-3">
+                    <label for="contact" class="form-label">Contact</label>
+                    <input type="tel" class="form-control" id="contact" name="contact" value="{{ worker['contact'] | default('') }}">
+                </div>
+                <div class="mb-3">
+                    <label for="address" class="form-label">Address</label>
+                    <textarea class="form-control" id="address" name="address" rows="3">{{ worker['address'] | default('') }}</textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="aadhar" class="form-label">Aadhar Number</label>
+                    <input type="text" class="form-control" id="aadhar" name="aadhar" value="{{ worker['aadhar'] | default('') }}">
+                </div>
+                <div class="mb-3">
+                    <label for="bank_account" class="form-label">Bank Account</label>
+                    <input type="text" class="form-control" id="bank_account" name="bank_account" value="{{ worker['bank_account'] | default('') }}">
+                </div>
+                <div class="mb-3">
+                    <label for="ifsc_code" class="form-label">IFSC Code</label>
+                    <input type="text" class="form-control" id="ifsc_code" name="ifsc_code" value="{{ worker['ifsc_code'] | default('') }}">
+                </div>
+                <div class="mb-3">
+                    <label for="upi_id" class="form-label">UPI ID</label>
+                    <input type="text" class="form-control" id="upi_id" name="upi_id" value="{{ worker['upi_id'] | default('') }}">
+                </div>
+                <div class="mb-3">
+                    <label for="rate" class="form-label">Rate (per beedi)</label>
+                    <input type="number" step="0.01" class="form-control" id="rate" name="rate" value="{{ worker['rate'] | default('') }}">
+                </div>
+                <div class="mb-3">
+                    <label for="preferred_payment_method" class="form-label">Preferred Payment Method</label>
+                    <select class="form-control" id="preferred_payment_method" name="preferred_payment_method">
+                        <option value="">(not set)</option>
+                        <option value="UPI" {% if worker['preferred_payment_method'] | default('') == 'UPI' %}selected{% endif %}>UPI</option>
+                        <option value="Bank Transfer" {% if worker['preferred_payment_method'] | default('') == 'Bank Transfer' %}selected{% endif %}>Bank Transfer</option>
+                        <option value="Cash" {% if worker['preferred_payment_method'] | default('') == 'Cash' %}selected{% endif %}>Cash</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Update Worker</button>
+                <a href="{{ url_for('main.worker_details', worker_id=worker['id']) }}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

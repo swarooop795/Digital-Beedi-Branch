@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Summary Cards -->
+        <div class="col-md-4">
+            <div class="card bg-primary text-white mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Total Payments Today</h5>
+                    <h2 class="mb-0">₹{{ "{:,.2f}".format(stats.today_total) }}</h2>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <span>{{ stats.today_count }} payments</span>
+                    <div class="small text-white">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">This Month</h5>
+                    <h2 class="mb-0">₹{{ "{:,.2f}".format(stats.month_total) }}</h2>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <span>{{ stats.month_count }} payments</span>
+                    <div class="small text-white">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Pending Confirmations</h5>
+                    <h2 class="mb-0">{{ stats.pending_count }}</h2>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a href="#pending" class="text-white">View Details</a>
+                    <div class="small text-white">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Method Distribution -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Payment Method Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="paymentMethodChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Daily Payment Trend</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="paymentTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Confirmations -->
+    <div class="card mb-4" id="pending">
+        <div class="card-header">
+            <h5 class="mb-0">Pending Payment Confirmations</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Receipt #</th>
+                            <th>Worker</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in pending_payments %}
+                        <tr>
+                            <td>{{ payment.receipt_number }}</td>
+                            <td>{{ payment.worker_name }}</td>
+                            <td>₹{{ "{:,.2f}".format(payment.amount) }}</td>
+                            <td>
+                                <span class="badge bg-{{ 
+                                    'primary' if payment.payment_method == 'UPI' 
+                                    else 'success' if payment.payment_method == 'Bank Transfer'
+                                    else 'warning' }}">
+                                    {{ payment.payment_method }}
+                                </span>
+                            </td>
+                            <td>{{ payment.payment_date }}</td>
+                            <td>
+                                <a href="{{ url_for('main.payment_receipt', payment_id=payment.id) }}" 
+                                   class="btn btn-sm btn-info">
+                                    <i class="fas fa-receipt"></i>
+                                </a>
+                                <button onclick="openProcessModal('{{ payment.id }}', '{{ payment.amount }}')" 
+                                        class="btn btn-sm btn-primary">
+                                    <i class="fas fa-hand-holding-medical"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Payments -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Recent Payments</h5>
+            <div>
+                <button class="btn btn-sm btn-primary" onclick="exportPayments()">
+                    <i class="fas fa-download"></i> Export
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped" id="paymentsTable">
+                    <thead>
+                        <tr>
+                            <th>Receipt #</th>
+                            <th>Worker</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in recent_payments %}
+                        <tr>
+                            <td>{{ payment.receipt_number }}</td>
+                            <td>{{ payment.worker_name }}</td>
+                            <td>₹{{ "{:,.2f}".format(payment.amount) }}</td>
+                            <td>
+                                <span class="badge bg-{{ 
+                                    'primary' if payment.payment_method == 'UPI' 
+                                    else 'success' if payment.payment_method == 'Bank Transfer'
+                                    else 'warning' }}">
+                                    {{ payment.payment_method }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 
+                                    'success' if payment.status == 'completed'
+                                    else 'warning' }}">
+                                    {{ payment.status.replace('_', ' ').title() }}
+                                </span>
+                            </td>
+                            <td>{{ payment.payment_date }}</td>
+                            <td>
+                                <a href="{{ url_for('main.payment_receipt', payment_id=payment.id) }}" 
+                                   class="btn btn-sm btn-info">
+                                    <i class="fas fa-receipt"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Process Payment Modal -->
+<div class="modal fade" id="processPaymentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Process Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="processPaymentForm">
+                    <input type="hidden" id="procPaymentId" name="payment_id">
+                    <div class="mb-3">
+                        <label class="form-label">Amount</label>
+                        <input type="text" id="procAmount" class="form-control" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="procMethod" class="form-label">Payment Method</label>
+                        <select id="procMethod" name="payment_method" class="form-select" required onchange="toggleProcDetails(this.value)">
+                            <option value="Cash">Cash</option>
+                            <option value="UPI">UPI</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                        </select>
+                    </div>
+                    <div id="procDetails" style="display:none">
+                        <div class="mb-3" id="procUpiRow">
+                            <label class="form-label">UPI ID</label>
+                            <input type="text" id="procUpi" name="upi_id" class="form-control">
+                        </div>
+                        <div class="mb-3" id="procBankRow">
+                            <label class="form-label">Bank Account</label>
+                            <input type="text" id="procBank" name="bank_account" class="form-control">
+                        </div>
+                        <div class="mb-3" id="procIfscRow">
+                            <label class="form-label">IFSC</label>
+                            <input type="text" id="procIfsc" name="ifsc" class="form-control">
+                        </div>
+                        <div class="mb-3" id="procTxnRow">
+                            <label class="form-label">Transaction Reference</label>
+                            <input type="text" id="procTxn" name="txn_ref" class="form-control">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="processPayment()">Record & Process</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script>
+// Payment Method Chart
+const methodCtx = document.getElementById('paymentMethodChart').getContext('2d');
+new Chart(methodCtx, {
+    type: 'pie',
+    data: {
+        labels: {{ payment_methods|tojson }},
+        datasets: [{
+            data: {{ method_counts|tojson }},
+            backgroundColor: [
+                '#007bff',
+                '#28a745',
+                '#ffc107'
+            ]
+        }]
+    }
+});
+
+// Payment Trend Chart
+const trendCtx = document.getElementById('paymentTrendChart').getContext('2d');
+new Chart(trendCtx, {
+    type: 'line',
+    data: {
+        labels: {{ trend_dates|tojson }},
+        datasets: [{
+            label: 'Daily Payment Total',
+            data: {{ trend_amounts|tojson }},
+            borderColor: '#17a2b8',
+            tension: 0.1
+        }]
+    },
+    options: {
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return '₹' + value.toLocaleString();
+                    }
+                }
+            }
+        }
+    }
+});
+
+function confirmPayment(paymentId) {
+    if (confirm('Are you sure you want to confirm this payment?')) {
+        fetch(`/payment/${paymentId}/confirm`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    }
+}
+
+function exportPayments() {
+    const table = document.getElementById('paymentsTable');
+    const ws = XLSX.utils.table_to_sheet(table);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Payments');
+    
+    // Generate filename with current date
+    const date = new Date().toISOString().split('T')[0];
+    const filename = `payments_report_${date}.xlsx`;
+    
+    XLSX.writeFile(wb, filename);
+}
+
+// Process payment modal helpers
+let processModal;
+function initializeProcessModal() {
+    const el = document.getElementById('processPaymentModal');
+    if (el && !processModal) processModal = new bootstrap.Modal(el);
+}
+
+function openProcessModal(paymentId, amount) {
+    initializeProcessModal();
+    document.getElementById('procPaymentId').value = paymentId;
+    document.getElementById('procAmount').value = '₹' + parseFloat(amount).toFixed(2);
+    document.getElementById('procMethod').value = 'Cash';
+    toggleProcDetails('Cash');
+    processModal.show();
+}
+
+function toggleProcDetails(method) {
+    const details = document.getElementById('procDetails');
+    if (method === 'Cash') {
+        details.style.display = 'none';
+    } else {
+        details.style.display = 'block';
+    }
+    // Show specific rows
+    document.getElementById('procUpiRow').style.display = method === 'UPI' ? 'block' : 'none';
+    document.getElementById('procBankRow').style.display = method === 'Bank Transfer' ? 'block' : 'none';
+    document.getElementById('procIfscRow').style.display = method === 'Bank Transfer' ? 'block' : 'none';
+    document.getElementById('procTxnRow').style.display = (method === 'UPI' || method === 'Bank Transfer') ? 'block' : 'none';
+}
+
+function processPayment() {
+    const form = document.getElementById('processPaymentForm');
+    const formData = new FormData(form);
+    const paymentId = document.getElementById('procPaymentId').value;
+
+    fetch(`/payment/${paymentId}/process`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            processModal.hide();
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    }).catch(err => alert('Error: ' + err));
+}
+</script>
+{% endblock %}

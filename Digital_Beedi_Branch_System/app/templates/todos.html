@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Admin Todo List</h2>
+<form method="post" class="mb-3">
+    <div class="input-group">
+        <input type="text" class="form-control" name="task" placeholder="New task..." required>
+        <button class="btn btn-success" type="submit">Add</button>
+    </div>
+</form>
+<ul class="list-group">
+    {% for todo in todos %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        <span{% if todo['is_done'] %} style="text-decoration: line-through;"{% endif %}>{{ todo['task'] }}</span>
+        <form method="post" action="/todos/complete/{{ todo['id'] }}" style="display:inline;">
+            {% if not todo['is_done'] %}
+            <button class="btn btn-sm btn-primary">Mark Done</button>
+            {% endif %}
+        </form>
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}

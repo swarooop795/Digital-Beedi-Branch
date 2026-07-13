@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3>Worker Details</h3>
+            {% if session.get('role') == 'admin' %}
+            <a href="{{ url_for('main.edit_worker', worker_id=worker['id']) }}" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Edit Worker
+            </a>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <tr>
+                    <th>ID</th>
+                    <td>{{ worker['id'] }}</td>
+                </tr>
+                <tr>
+                    <th>Name</th>
+                    <td>{{ worker['name'] }}</td>
+                </tr>
+                <tr>
+                    <th>Age</th>
+                    <td>{{ worker['age'] | default('') }}</td>
+                </tr>
+                <tr>
+                    <th>Contact</th>
+                    <td>{{ worker['contact'] | default('') }}</td>
+                </tr>
+                <tr>
+                    <th>Address</th>
+                    <td>{{ worker['address'] | default('') }}</td>
+                </tr>
+                <tr>
+                    <th>Aadhar Number</th>
+                    <td>{{ worker['aadhar'] | default('') }}</td>
+                </tr>
+                <tr>
+                    <th>Bank Account</th>
+                    <td>
+                        {% if session.get('role') == 'worker' and worker['bank_account'] %}
+                            ************{{ worker['bank_account'][-4:] }}
+                        {% else %}
+                            {{ worker['bank_account'] | default('') }}
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Manager / Contractor</th>
+                    <td>{{ worker['contractor'] | default('') }}</td>
+                </tr>
+                <tr>
+                    <th>IFSC Code</th>
+                    <td>{{ worker['ifsc_code'] | default('') }}</td>
+                </tr>
+                <tr>
+                    <th>UPI ID</th>
+                    <td>{{ worker['upi_id'] | default('') }}</td>
+                </tr>
+            </table>
+
+            <div class="mt-4">
+                <h4>Payment History</h4>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in payments %}
+                        <tr>
+                            <td>{{ payment[1] }}</td>
+                            <td>₹{{ payment[2] }}</td>
+                            <td>{{ payment[3] }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if payment[4] == 'paid' else 'warning' }}">
+                                    {{ payment[4] }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if session.get('role') == 'admin' %}
+            <div class="mt-4">
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card bg-light h-100">
+                            <div class="card-body">
+                                <h5 class="card-title text-primary">
+                                    <i class="fas fa-mobile-alt"></i> UPI Payment Steps
+                                </h5>
+                                <ol class="small">
+                                    <li>Enter payment amount</li>
+                                    <li>Select "UPI" as payment method</li>
+                                    <li>Enter or verify UPI ID</li>
+                                    <li>Open your UPI app (PhonePe/GPay)</li>
+                                    <li>Complete payment to worker's UPI</li>
+                                    <li>Note transaction ID in comments</li>
+                                    <li>Click "Make Payment" to record</li>
+                                </ol>
+                                {% if worker['upi_id'] %}
+                                <div class="alert alert-info mb-0">
+                                    <i class="fas fa-info-circle"></i> Saved UPI: {{ worker['upi_id'] }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light h-100">
+                            <div class="card-body">
+                                <h5 class="card-title text-success">
+                                    <i class="fas fa-university"></i> Bank Transfer Steps
+                                </h5>
+                                <ol class="small">
+                                    <li>Enter payment amount</li>
+                                    <li>Select "Bank Transfer" method</li>
+                                    <li>Verify account & IFSC details</li>
+                                    <li>Login to your bank's website/app</li>
+                                    <li>Add beneficiary if needed</li>
+                                    <li>Complete NEFT/IMPS transfer</li>
+                                    <li>Note reference number</li>
+                                    <li>Click "Make Payment" to record</li>
+                                </ol>
+                                {% if worker['bank_account'] %}
+                                <div class="alert alert-info mb-0">
+                                    <i class="fas fa-info-circle"></i> Saved Account: {{ worker['bank_account'] }}<br>
+                                    IFSC: {{ worker['ifsc_code'] }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light h-100">
+                            <div class="card-body">
+                                <h5 class="card-title text-warning">
+                                    <i class="fas fa-money-bill-wave"></i> Cash Payment Steps
+                                </h5>
+                                <ol class="small">
+                                    <li>Enter payment amount</li>
+                                    <li>Select "Cash" as method</li>
+                                    <li>Count cash amount carefully</li>
+                                    <li>Hand over to worker</li>
+                                    <li>Note denominations given</li>
+                                    <li>Get worker's signature/acknowledgment</li>
+                                    <li>Click "Make Payment" to record</li>
+                                </ol>
+                                <div class="alert alert-warning mb-0">
+                                    <i class="fas fa-exclamation-triangle"></i> Always count twice and get acknowledgment
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h4>Make Payment</h4>
+                <form method="POST" action="{{ url_for('main.make_worker_payment', worker_id=worker['id']) }}" class="card p-3">
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Amount</label>
+                        <input type="number" step="0.01" class="form-control" id="amount" name="amount" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="payment_method" class="form-label">Payment Method</label>
+                        <select class="form-control" id="payment_method" name="payment_method" required onchange="toggleWorkerPaymentFields(this.value)">
+                            <option value="">Select</option>
+                            <option value="UPI">UPI Payment</option>
+                            <option value="Cash">Cash Payment</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                        </select>
+                    </div>
+                    <div id="worker_upi_fields" style="display:none" class="mb-2">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Make sure to verify UPI ID before sending money
+                        </div>
+                        <input type="text" name="upi_id" class="form-control" placeholder="UPI ID" 
+                               value="{{ worker['upi_id'] | default('') }}">
+                    </div>
+                    <div id="worker_bank_fields" style="display:none" class="mb-2">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Double check account details before transfer
+                        </div>
+                        <input type="text" name="account_number" class="form-control mb-1" placeholder="Account number"
+                               value="{{ worker['bank_account'] | default('') }}">
+                        <input type="text" name="ifsc_code" class="form-control" placeholder="IFSC code"
+                               value="{{ worker['ifsc_code'] | default('') }}">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-check-label">
+                            <input type="checkbox" name="save_payment_details"> Save these payment details to worker record
+                        </label>
+                    </div>
+                    <div class="mb-3">
+                        <label for="payment_comment" class="form-label">Payment Notes</label>
+                        <textarea name="payment_comment" id="payment_comment" class="form-control" 
+                                placeholder="Enter transaction ID, reference number, or cash denominations"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-lg w-100">
+                        <i class="fas fa-check-circle"></i> Make Payment
+                    </button>
+                </form>
+            </div>
+            {% elif session.get('role') == 'worker' %}
+            <div class="mt-4 alert alert-info">
+                If any of your details are incorrect, please contact your Branch Manager to get them updated.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function toggleWorkerPaymentFields(method) {
+    document.getElementById('worker_upi_fields').style.display = method === 'UPI' ? 'block' : 'none';
+    document.getElementById('worker_bank_fields').style.display = method === 'Bank Transfer' ? 'block' : 'none';
+}
+
+// Pre-select fields if worker has saved preference
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+    const preferred = "{{ worker['preferred_payment_method'] | default('') }}";
+        if (preferred) {
+            const sel = document.getElementById('payment_method');
+            if (sel) sel.value = preferred;
+            toggleWorkerPaymentFields(preferred);
+        }
+    } catch (e) { /* ignore templating on missing values */ }
+});
+</script>
+{% endblock %}

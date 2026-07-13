@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="jumbotron text-center">
+    <h1 class="display-4">Welcome to Beedi Workers Management System</h1>
+    <p class="lead">Choose how you'd like to continue</p>
+    <hr class="my-4">
+    <div class="d-flex justify-content-center gap-3 mt-4">
+        <a href="/admin-login" class="btn btn-lg btn-primary px-5">Admin Login</a>
+        <a href="/worker-login" class="btn btn-lg btn-secondary px-5">Worker Login</a>
+    </div>
+    <p class="mt-4 text-muted">Admins can manage workers, enter beedi collections and payments. Workers can view their profiles after admin-provisioned credentials.</p>
+</div>
+{% endblock %}

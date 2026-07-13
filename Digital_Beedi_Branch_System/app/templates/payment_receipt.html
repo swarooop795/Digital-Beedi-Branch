@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4" id="receipt">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3>Payment Receipt</h3>
+            <div>
+                <button onclick="printReceipt()" class="btn btn-primary">
+                    <i class="fas fa-print"></i> Print Receipt
+                </button>
+                {% if payment.get('status') == 'pending_confirmation' and session.get('role') == 'admin' %}
+                <button onclick="confirmPayment()" class="btn btn-success">
+                    <i class="fas fa-check-circle"></i> Confirm Payment
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-6">
+                    <h6 class="text-muted">Receipt No:</h6>
+                    <h5>{{ payment.get('receipt_number') }}</h5>
+                </div>
+                <div class="col-6 text-end">
+                    <h6 class="text-muted">Date:</h6>
+                    <h5>{{ payment.get('payment_date') }}</h5>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-6">
+                    <h6 class="text-muted">Worker Details:</h6>
+                    <p class="mb-1">Name: {{ worker['name'] }}</p>
+                    <p class="mb-1">ID: {{ worker['id'] }}</p>
+                    <p class="mb-1">Contact: {{ worker['contact'] | default('') }}</p>
+                </div>
+                <div class="col-6">
+                    <h6 class="text-muted">Payment Details:</h6>
+                    <p class="mb-1">Amount: ₹{{ payment.get('amount') }}</p>
+                    <p class="mb-1">Method: {{ payment.get('payment_method') }}</p>
+                    <p class="mb-1">Status: 
+                        <span class="badge bg-{{ 'success' if payment.get('status') == 'completed' else 'warning' }}">
+                            {{ payment.get('status').replace('_', ' ').title() }}
+                        </span>
+                    </p>
+                </div>
+            </div>
+
+            {% if payment.get('payment_method') == 'UPI' %}
+            <div class="alert alert-info">
+                <h6><i class="fas fa-mobile-alt"></i> UPI Transaction Details:</h6>
+                <p class="mb-1">UPI ID: {{ payment.get('details', {}).get('upi_id') }}</p>
+                {% if payment.get('payment_comment') %}
+                <p class="mb-1">Transaction ID: {{ payment.get('payment_comment') }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if payment.get('payment_method') == 'Bank Transfer' %}
+            <div class="alert alert-info">
+                <h6><i class="fas fa-university"></i> Bank Transfer Details:</h6>
+                <p class="mb-1">Account: {{ payment.get('details', {}).get('account_number') }}</p>
+                <p class="mb-1">IFSC: {{ payment.get('details', {}).get('ifsc_code') }}</p>
+                {% if payment.get('payment_comment') %}
+                <p class="mb-1">Reference No: {{ payment.get('payment_comment') }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if payment.get('payment_method') == 'Cash' %}
+            <div class="alert alert-warning">
+                <h6><i class="fas fa-money-bill-wave"></i> Cash Payment Details:</h6>
+                {% if payment.get('payment_comment') %}
+                <p class="mb-1">Denominations: {{ payment.get('payment_comment') }}</p>
+                {% endif %}
+                <p class="mb-0"><strong>Note:</strong> Please keep this receipt safe for your records.</p>
+            </div>
+            {% endif %}
+
+            <div class="row mt-4">
+                <div class="col-6">
+                    <h6 class="text-muted">Admin Signature</h6>
+                    <div class="border-bottom pt-4 mt-2">
+                        {{ session.get('username', '') }}
+                    </div>
+                </div>
+                <div class="col-6">
+                    <h6 class="text-muted">Worker Acknowledgment</h6>
+                    <div class="border-bottom pt-4 mt-2">
+                        {{ worker.get('name') }}
+                    </div>
+                </div>
+            </div>
+
+            {% if payment.get('status') == 'completed' %}
+            <div class="text-center mt-4">
+                <div class="badge bg-success p-2">
+                    <i class="fas fa-check-circle"></i> Payment Verified & Completed
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function printReceipt() {
+    window.print();
+}
+
+function confirmPayment() {
+    if (confirm('Are you sure you want to confirm this payment as completed?')) {
+        fetch('{{ url_for("main.confirm_payment", payment_id=payment.get("id")) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Error confirming payment: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error confirming payment. Please try again.');
+        });
+    }
+}
+</script>
+
+<style media="print">
+    @page {
+        size: A4;
+        margin: 1cm;
+    }
+    .btn, .no-print {
+        display: none !important;
+    }
+    .card {
+        border: none !important;
+    }
+    .card-header {
+        background: none !important;
+        border: none !important;
+    }
+    .alert {
+        border: 1px solid #ddd !important;
+        padding: 15px !important;
+    }
+</style>
+{% endblock %}

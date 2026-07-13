@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="receipt-container" style="max-width: 800px; margin: 20px auto; padding: 20px; border: 1px solid #ddd;">
+    <div class="text-center mb-4">
+        <h2>Payment Receipt</h2>
+        <p class="text-muted">{{ receipt_date }}</p>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-6">
+            <h5>Worker Details:</h5>
+            <p>
+                Name: {{ worker.name }}<br>
+                ID: {{ worker.id }}<br>
+                Contact: {{ worker.contact }}
+            </p>
+        </div>
+        <div class="col-6 text-end">
+            <h5>Payment Details:</h5>
+            <p>
+                Receipt No: {{ receipt_no }}<br>
+                Payment Date: {{ payment_info.timestamp }}<br>
+                Payment Method: {{ payment_method }}
+            </p>
+        </div>
+    </div>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th class="text-end">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    Beedi Making Wages<br>
+                    <small class="text-muted">
+                        Quantity: {{ quantity }} @ ₹{{ price }} per beedi<br>
+                        Entry Date: {{ entry_time }}
+                    </small>
+                </td>
+                <td class="text-end">₹{{ wage }}</td>
+            </tr>
+            <tr>
+                <td class="text-end"><strong>Total Amount</strong></td>
+                <td class="text-end"><strong>₹{{ wage }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <h5>Payment Information:</h5>
+            {% if payment_method == 'UPI' %}
+                <p>UPI ID: {{ payment_info.details.upi_id }}</p>
+            {% elif payment_method == 'Bank Transfer' %}
+                <p>
+                    Account Number: {{ payment_info.details.account_number }}<br>
+                    IFSC Code: {{ payment_info.details.ifsc_code }}
+                </p>
+            {% endif %}
+            {% if payment_comment %}
+                <p><strong>Note:</strong> {{ payment_comment }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-6">
+            <p>Received By:<br>{{ worker.name }}</p>
+        </div>
+        <div class="col-6 text-end">
+            <p>Authorized By:<br>{{ payment_info.admin_username }}</p>
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <p class="text-muted small">This is a computer generated receipt.</p>
+    </div>
+</div>
+
+{% if not print_view %}
+<div class="text-center mt-3">
+    <a href="{{ url_for('main.generate_receipt', entry_id=entry_id, format='pdf') }}" class="btn btn-primary">
+        Download PDF
+    </a>
+    <button onclick="window.print()" class="btn btn-secondary ms-2">Print Receipt</button>
+</div>
+{% endif %}
+{% endblock %}

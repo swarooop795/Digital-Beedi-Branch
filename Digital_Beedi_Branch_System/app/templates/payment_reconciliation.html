@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Payment Reconciliation</h2>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Expected</h5>
+                <h3>₹{{ total_expected }}</h3>
+                <small>Based on scheduled payments</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Paid</h5>
+                <h3>₹{{ total_paid }}</h3>
+                <small>Actual payments made</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card {% if discrepancy > 0 %}bg-warning{% else %}bg-info{% endif %} text-white">
+            <div class="card-body">
+                <h5 class="card-title">Discrepancy</h5>
+                <h3>₹{{ discrepancy }}</h3>
+                <small>Expected vs Actual</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-secondary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Pending Review</h5>
+                <h3>{{ pending_review }}</h3>
+                <small>Transactions to verify</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Batch Actions -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Batch Actions</h5>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <select class="form-select" id="batchAction">
+                        <option value="">Select Action...</option>
+                        <option value="verify">Verify Selected</option>
+                        <option value="mark-paid">Mark as Paid</option>
+                        <option value="schedule">Schedule Payment</option>
+                        <option value="export">Export Selected</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="executeBatchAction()">Execute</button>
+                </div>
+            </div>
+            <div class="col-md-6 text-end">
+                <button class="btn btn-outline-primary" onclick="generateReport()">
+                    <i class="fas fa-file-export"></i> Generate Report
+                </button>
+                <button class="btn btn-outline-success" onclick="reconcileAll()">
+                    <i class="fas fa-check-double"></i> Reconcile All
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reconciliation Table -->
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="reconciliationTable">
+                <thead>
+                    <tr>
+                        <th>
+                            <input type="checkbox" class="form-check-input" id="selectAll" 
+                                   onclick="toggleAllSelection()">
+                        </th>
+                        <th>Date</th>
+                        <th>Worker</th>
+                        <th>Expected Amount</th>
+                        <th>Actual Amount</th>
+                        <th>Difference</th>
+                        <th>Status</th>
+                        <th>Notes</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in reconciliation_items %}
+                    <tr class="{% if item.difference != 0 %}table-warning{% endif %}">
+                        <td>
+                            <input type="checkbox" class="form-check-input item-select" 
+                                   value="{{ item.id }}">
+                        </td>
+                        <td>{{ item.date }}</td>
+                        <td>{{ item.worker_name }}</td>
+                        <td>₹{{ item.expected_amount }}</td>
+                        <td>₹{{ item.actual_amount }}</td>
+                        <td class="{% if item.difference > 0 %}text-danger{% elif item.difference < 0 %}text-success{% endif %}">
+                            ₹{{ item.difference }}
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ item.status_color }}">{{ item.status }}</span>
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ item.notes or '' }}</small>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" 
+                                        onclick="showDetails({{ item.id }})">
+                                    Details
+                                </button>
+                                <button class="btn btn-outline-success" 
+                                        onclick="verifyPayment({{ item.id }})"
+                                        {% if item.status == 'verified' %}disabled{% endif %}>
+                                    Verify
+                                </button>
+                                <button class="btn btn-outline-warning" 
+                                        onclick="addNote({{ item.id }})">
+                                    Note
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Details Modal -->
+<div class="modal fade" id="detailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Payment Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="paymentDetails">
+                <!-- Filled dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Note Modal -->
+<div class="modal fade" id="noteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Reconciliation Note</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="noteForm">
+                    <input type="hidden" name="item_id" id="noteItemId">
+                    <div class="mb-3">
+                        <label class="form-label">Note</label>
+                        <textarea class="form-control" name="note" rows="3" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Note</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleAllSelection() {
+    const mainCheckbox = document.getElementById('selectAll');
+    const itemCheckboxes = document.querySelectorAll('.item-select');
+    itemCheckboxes.forEach(cb => cb.checked = mainCheckbox.checked);
+}
+
+function getSelectedItems() {
+    return Array.from(document.querySelectorAll('.item-select:checked')).map(cb => cb.value);
+}
+
+function executeBatchAction() {
+    const action = document.getElementById('batchAction').value;
+    const selectedItems = getSelectedItems();
+    
+    if (!action) {
+        alert('Please select an action');
+        return;
+    }
+    
+    if (selectedItems.length === 0) {
+        alert('Please select at least one item');
+        return;
+    }
+    
+    // Execute the selected action
+    fetch(`/reconciliation/${action}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ items: selectedItems })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert(data.error || 'Action failed');
+        }
+    });
+}
+
+function showDetails(itemId) {
+    fetch(`/reconciliation/details/${itemId}`)
+        .then(response => response.json())
+        .then(data => {
+            const detailsHtml = generateDetailsHtml(data);
+            document.getElementById('paymentDetails').innerHTML = detailsHtml;
+            new bootstrap.Modal(document.getElementById('detailsModal')).show();
+        });
+}
+
+function generateDetailsHtml(data) {
+    return `
+        <div class="container-fluid">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <h6>Worker Information</h6>
+                    <p>
+                        Name: ${data.worker_name}<br>
+                        ID: ${data.worker_id}<br>
+                        Contact: ${data.worker_contact}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Payment Information</h6>
+                    <p>
+                        Expected: ₹${data.expected_amount}<br>
+                        Actual: ₹${data.actual_amount}<br>
+                        Date: ${data.date}
+                    </p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12">
+                    <h6>Payment History</h6>
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.payment_history.map(p => `
+                                <tr>
+                                    <td>${p.date}</td>
+                                    <td>₹${p.amount}</td>
+                                    <td>${p.method}</td>
+                                    <td>${p.status}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            ${data.notes ? `
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Notes</h6>
+                        <div class="alert alert-info">
+                            ${data.notes}
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function verifyPayment(itemId) {
+    if (confirm('Mark this payment as verified?')) {
+        fetch(`/reconciliation/verify/${itemId}`, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.error || 'Verification failed');
+                }
+            });
+    }
+}
+
+function addNote(itemId) {
+    document.getElementById('noteItemId').value = itemId;
+    new bootstrap.Modal(document.getElementById('noteModal')).show();
+}
+
+document.getElementById('noteForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    fetch('/reconciliation/add-note', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert(data.error || 'Failed to add note');
+        }
+    });
+});
+
+function generateReport() {
+    window.location.href = '/reconciliation/report';
+}
+
+function reconcileAll() {
+    if (confirm('Start automatic reconciliation for all pending items?')) {
+        fetch('/reconciliation/reconcile-all', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.error || 'Reconciliation failed');
+                }
+            });
+    }
+}
+</script>
+{% endblock %}

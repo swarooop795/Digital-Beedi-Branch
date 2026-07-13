@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <!-- Worker-specific banner to visually distinguish the dashboard -->
+    <div class="mb-3">
+        <div class="alert alert-info d-flex justify-content-between align-items-center" role="alert">
+            <div>
+                <strong>Worker Dashboard</strong>
+                <div class="small">Read-only view — contact your Branch Manager for edits</div>
+            </div>
+            <div>
+                <span class="badge bg-dark">Worker</span>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">Worker Profile</h4>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <i class="fas fa-user-circle fa-5x text-info"></i>
+                    </div>
+                    <table class="table">
+                        <tr>
+                            <th>Worker ID:</th>
+                            <td>{{ worker.id }}</td>
+                        </tr>
+                        <tr>
+                            <th>Name:</th>
+                            <td>{{ worker.name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Contact:</th>
+                            <td>{{ worker.contact }}</td>
+                        </tr>
+                        <tr>
+                            <th>Address:</th>
+                            <td>{{ worker.address }}</td>
+                        </tr>
+                        <tr>
+                            <th>Bank Account:</th>
+                            <td>
+                                {% if session.get('role') == 'worker' and worker.bank_account %}
+                                    ************{{ worker.bank_account[-4:] }}
+                                {% else %}
+                                    {{ worker.bank_account or '' }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Manager:</th>
+                            <td>{{ worker.contractor or '' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Join Date:</th>
+                            <td>{{ worker.join_date }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+
+            <!-- To-do / Quick Links card -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">To‑Do & Quick Links</h4>
+                    <div class="small">Overview</div>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Submitted Beedis</strong>
+                                <div class="small text-muted">Your recent beedi submissions</div>
+                            </div>
+                            <a href="#work-history" class="badge bg-primary text-decoration-none">{{ work_history|length }}</a>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Payment History</strong>
+                                <div class="small text-muted">Recent payments to you</div>
+                            </div>
+                            <a href="#payments" class="badge bg-success text-decoration-none">{{ payments|length }}</a>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Notifications</strong>
+                                <div class="small text-muted">Unread & recent notices</div>
+                            </div>
+                            <a href="#notifications" class="badge bg-info text-decoration-none">{{ notifications|length if notifications is not none else 0 }}</a>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Raw Materials</strong>
+                                <div class="small text-muted">Beedi leaves & supplies</div>
+                            </div>
+                            <a href="#inventory" class="badge bg-secondary text-decoration-none">{{ raw_materials|length if raw_materials is not none else 0 }}</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div id="payments" class="card mb-4">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Recent Payments</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Method</th>
+                                    <th>Status</th>
+                                    <th>Receipt</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in payments %}
+                                <tr>
+                                    <td>{{ payment.payment_date }}</td>
+                                    <td>₹{{ "{:,.2f}".format(payment.amount) }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 
+                                            'primary' if payment.payment_method == 'UPI' 
+                                            else 'success' if payment.payment_method == 'Bank Transfer'
+                                            else 'warning' }}">
+                                            {{ payment.payment_method }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 
+                                            'success' if payment.status == 'completed'
+                                            else 'warning' }}">
+                                            {{ payment.status.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if payment.receipt_number %}
+                                        <a href="{{ url_for('main.payment_receipt', payment_id=payment.id) }}" 
+                                           class="btn btn-sm btn-info">
+                                            <i class="fas fa-receipt"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+                <div id="work-logs" class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h4 class="mb-0">Daily Collections (Passbook)</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Quantity</th>
+                                        <th>Rate</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if work_logs %}
+                                        {% for wl in work_logs %}
+                                        <tr>
+                                            <td>{{ wl.created_at }}</td>
+                                            <td>{{ wl.quantity_collected }}</td>
+                                            <td>₹{{ "{:.2f}".format(wl.rate) }}</td>
+                                            <td>₹{{ "{:.2f}".format(wl.amount) }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ 'warning' if wl.status == 'processing' else 'success' }}">
+                                                    {{ wl.status.title() }}
+                                                </span>
+                                                {% if wl.receipt_number %}
+                                                    <div class="small mt-1">Receipt: {{ wl.receipt_number }}</div>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr><td colspan="5">No collections logged yet.</td></tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="work-history" class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">Work History</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Quantity</th>
+                                        <th>Price/Item</th>
+                                        <th>Total</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for entry in work_history %}
+                                    <tr>
+                                        <td>{{ entry.entry_time }}</td>
+                                        <td>{{ entry.quantity }}</td>
+                                        <td>₹{{ "{:.2f}".format(entry.price) }}</td>
+                                        <td>₹{{ "{:.2f}".format(entry.price * entry.quantity) }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if entry.is_paid else 'warning' }}">
+                                                {{ 'Paid' if entry.is_paid else 'Pending' }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notifications and Inventory (raw materials) -->
+                <div id="notifications" class="card mt-4 mb-3">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Recent Notifications</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if notifications and notifications|length > 0 %}
+                            <ul class="list-group">
+                                {% for note in notifications[:8] %}
+                                <li class="list-group-item d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <div class="fw-bold">{{ note.title or 'Notice' }}</div>
+                                        <div class="small text-muted">{{ note.message }}</div>
+                                    </div>
+                                    {% if note.url %}
+                                    <button type="button" class="btn btn-sm btn-outline-primary mark-read-open" data-id="{{ note['id'] }}" data-url="{{ note['url'] }}">Open</button>
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <div class="text-muted">No notifications.</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div id="inventory" class="card mb-4">
+                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Raw Material Inventory</h5>
+                            <div class="small text-muted">Low threshold: {{ low_stock_threshold }} items</div>
+                        </div>
+                    <div class="card-body">
+                        {% if raw_materials and raw_materials|length > 0 %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Item</th>
+                                            <th>Qty</th>
+                                            <th>Last Updated</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in raw_materials %}
+                                        <tr {% if item.quantity is not none and item.quantity|int <= low_stock_threshold %}class="table-warning"{% endif %}>
+                                            <td>{{ item.item_name }}</td>
+                                            <td>
+                                                {{ item.quantity }}
+                                                {% if item.quantity is not none and item.quantity|int <= low_stock_threshold %}
+                                                    <span class="badge bg-danger ms-2" title="Quantity is at or below the low-stock threshold">Low</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ item.last_updated }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-muted">No raw material inventory recorded.</div>
+                        {% endif %}
+                    </div>
+                </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.mark-read-open').forEach(function(btn){
+        btn.addEventListener('click', function(ev){
+            const noteId = btn.getAttribute('data-id');
+            const targetUrl = btn.getAttribute('data-url');
+            if (!noteId) return;
+            fetch('{{ url_for("main.mark_notification_read", note_id=0) }}'.replace('/0', '/' + noteId), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            }).then(function(resp){
+                if (resp.ok) {
+                    // navigate to the notification url if provided
+                    if (targetUrl) {
+                        window.location.href = targetUrl;
+                    } else {
+                        // otherwise reload to update badges
+                        window.location.reload();
+                    }
+                } else {
+                    // fallback: redirect via server route
+                    window.location.href = '/notifications/open/' + noteId;
+                }
+            }).catch(function(){
+                window.location.href = '/notifications/open/' + noteId;
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

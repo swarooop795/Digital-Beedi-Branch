@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Daily Payment Summary</h2>
+
+<!-- Filter Section -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">From Date</label>
+                <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">To Date</label>
+                <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i> View Report
+                </button>
+                <a href="{{ url_for('main.export_payment_report', from_date=from_date, to_date=to_date) }}" 
+                   class="btn btn-success">
+                    <i class="fas fa-download"></i> Export
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Section -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Payments</h5>
+                <h3>₹{{ "{:,.2f}".format(summary.total_amount) }}</h3>
+                <small>{{ summary.total_payments }} payments</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Workers</h5>
+                <h3>{{ summary.worker_count }}</h3>
+                <small>Received payments</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Daily Average</h5>
+                <h3>₹{{ "{:,.2f}".format(summary.daily_average) }}</h3>
+                <small>Per day</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <h5 class="card-title">Pending Amount</h5>
+                <h3>₹{{ "{:,.2f}".format(summary.pending_amount) }}</h3>
+                <small>{{ summary.pending_count }} pending payments</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Daily Summary Table -->
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Daily Summary</h5>
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Total Payments</th>
+                        <th>Workers Paid</th>
+                        <th>Total Amount</th>
+                        <th>Payment Methods</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for day in daily_summary %}
+                    <tr>
+                        <td>{{ day.date }}</td>
+                        <td>{{ day.payment_count }}</td>
+                        <td>{{ day.worker_count }}</td>
+                        <td>₹{{ "{:,.2f}".format(day.total_amount) }}</td>
+                        <td>
+                            {% for method in day.payment_methods %}
+                            <span class="badge bg-secondary">
+                                {{ method.name }}: {{ method.count }}
+                            </span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" 
+                                    onclick="showDayDetails('{{ day.date }}')">
+                                View Details
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Day Details Modal -->
+<div class="modal fade" id="dayDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Daily Payment Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Worker</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dayDetailsContent">
+                            <!-- Filled dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showDayDetails(date) {
+    fetch(`/payment-report/day/${date}`)
+        .then(response => response.json())
+        .then(data => {
+            const content = document.getElementById('dayDetailsContent');
+            content.innerHTML = data.payments.map(p => `
+                <tr>
+                    <td>${p.worker_name}</td>
+                    <td>₹${p.amount}</td>
+                    <td>${p.method}</td>
+                    <td>${p.time}</td>
+                    <td>
+                        <span class="badge bg-${p.status === 'paid' ? 'success' : 'warning'}">
+                            ${p.status}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+            new bootstrap.Modal(document.getElementById('dayDetailsModal')).show();
+        });
+}
+</script>
+{% endblock %}

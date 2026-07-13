@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="login-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="login-card">
+                    <div class="login-header bg-primary text-white">
+                        <h3>
+                            <i class="fas fa-shield-alt me-2"></i>
+                            Two-Factor Authentication
+                        </h3>
+                    </div>
+                    <div class="login-body">
+                        <form method="POST">
+                            {% with messages = get_flashed_messages(with_categories=true) %}
+                                {% if messages %}
+                                    {% for category, message in messages %}
+                                        <div class="alert alert-{{ category }} alert-dismissible fade show">
+                                            {{ message }}
+                                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endwith %}
+
+                            <div class="text-center mb-4">
+                                <i class="fas fa-mobile-alt fa-3x text-primary"></i>
+                                <p class="mt-3">Please enter the 6-digit code from your authenticator app</p>
+                            </div>
+                            
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="token" name="token" 
+                                       placeholder="Enter 6-digit code" required pattern="[0-9]{6}"
+                                       autocomplete="off" inputmode="numeric">
+                                <label for="token">
+                                    <i class="fas fa-key me-2"></i>Authentication Code
+                                </label>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-login">
+                                    <span class="spinner-border spinner-border-sm"></span>
+                                    <i class="fas fa-check me-2"></i>Verify Code
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="login-footer text-center">
+                        <p class="mb-0">
+                            <a href="{{ url_for('auth.login') }}" class="text-muted">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Login
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/login.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,4 @@
+-- Add login-related columns to workers table
+ALTER TABLE workers ADD COLUMN username TEXT UNIQUE;
+ALTER TABLE workers ADD COLUMN password TEXT;
+ALTER TABLE workers ADD COLUMN is_active BOOLEAN DEFAULT 0;

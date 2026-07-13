@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="login-card worker-login">
+                    <div class="login-header">
+                        <h3>
+                            <i class="fas fa-hard-hat me-2"></i>
+                            Worker Login
+                        </h3>
+                    </div>
+                    <div class="login-body">
+                        <form method="POST" action="{{ url_for('auth.worker_login') }}">
+                            {% with messages = get_flashed_messages(with_categories=true) %}
+                                {% if messages %}
+                                    {% for category, message in messages %}
+                                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                            {{ message }}
+                                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endwith %}
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="username" name="username" placeholder="Username" required>
+                                    <label for="username">
+                                        <i class="fas fa-user me-2"></i>Username
+                                    </label>
+                                </div>
+                                <div class="form-floating mb-3">
+                                    <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
+                                    <label for="password">
+                                        <i class="fas fa-lock me-2"></i>Password
+                                    </label>
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary btn-login">Login</button>
+                                </div>
+                        </form>
+                    </div>
+                    <div class="login-footer">
+                        <p class="mb-0">
+                            Are you an admin? 
+                            <a href="{{ url_for('auth.admin_login') }}" class="text-primary">
+                                <i class="fas fa-user-shield me-1"></i>Login here
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/login.js') }}"></script>
+{% endblock %}

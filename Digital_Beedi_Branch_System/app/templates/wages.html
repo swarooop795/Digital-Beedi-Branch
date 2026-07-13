@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Worker Payments</h2>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4>Payment Methods</h4>
+            <div>
+                <button type="button" class="btn btn-primary" onclick="toggleBulkPayment()">
+                    <i class="fas fa-list-check"></i> Bulk Payment
+                </button>
+            </div>
+        </div>
+        <div id="bulkPaymentForm" style="display: none;" class="mb-4">
+            <form method="post" action="{{ url_for('main.bulk_payment') }}" id="bulkPaymentFormMain">
+                <div class="row g-3 align-items-center">
+                    <div class="col-auto">
+                        <select name="payment_method" class="form-select" required>
+                            <option value="">Select Payment Method</option>
+                            <option value="UPI">UPI Payment</option>
+                            <option value="Cash">Cash Payment</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-success">Process Selected Payments</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h5>UPI Payment</h5>
+                        <ul class="list-unstyled">
+                            <li>✓ Instant transfer</li>
+                            <li>✓ Digital receipt</li>
+                            <li>✓ Secure transaction</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h5>Cash Payment</h5>
+                        <ul class="list-unstyled">
+                            <li>✓ Immediate handover</li>
+                            <li>✓ Physical receipt</li>
+                            <li>✓ No transfer fees</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h5>Bank Transfer</h5>
+                        <ul class="list-unstyled">
+                            <li>✓ Direct deposit</li>
+                            <li>✓ Bank statement record</li>
+                            <li>✓ Scheduled payments</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Worker</th>
+                <th>Price per Beedi</th>
+                <th>Quantity</th>
+                <th>Date/Time</th>
+                <th>Total Amount</th>
+                <th>Status</th>
+                <th>Payment Method</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in entries %}
+            <tr>
+                <td>{{ entry['name'] }}</td>
+                <td>{{ entry['price'] }}</td>
+                <td>{{ entry['quantity'] }}</td>
+                <td>{{ entry['entry_time'] }}</td>
+                <td>₹{{ entry['wage'] }}</td>
+                <td>
+                    {% if entry['is_paid'] %}
+                        <span class="badge bg-success">Paid</span>
+                    {% else %}
+                        <span class="badge bg-danger">Unpaid</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if entry['is_paid'] %}
+                        <div>
+                            <strong>Method:</strong> {{ entry['payment_method'] or 'N/A' }}
+                            {% if entry.get('payment_details') %}
+                                <br>
+                                <small class="text-muted">
+                                    {% set details = eval(entry['payment_details']) %}
+                                    {% if details.get('details', {}).get('upi_id') %}
+                                        UPI: {{ details['details']['upi_id'] }}
+                                    {% elif details.get('details', {}).get('account_number') %}
+                                        Acc: {{ details['details']['account_number'] }}
+                                    {% endif %}
+                                </small>
+                                <br>
+                                <div class="btn-group btn-group-sm mt-1">
+                                    <a href="{{ url_for('main.generate_receipt', entry_id=entry['id']) }}" 
+                                       class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-receipt"></i> View Receipt
+                                    </a>
+                                    <a href="{{ url_for('main.generate_receipt', entry_id=entry['id'], format='pdf') }}" 
+                                       class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-download"></i> PDF
+                                    </a>
+                                    <form method="post" action="{{ url_for('main.mark_unpaid', entry_id=entry['id']) }}" style="display:inline;">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Mark this entry as unpaid? This will record a reversal.');">
+                                            <i class="fas fa-undo"></i> Mark Unpaid
+                                        </button>
+                                    </form>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                    <form method="post" action="/wages/pay/{{ entry['id'] }}" id="paymentForm_{{ entry['id'] }}" 
+                          data-worker-id="{{ entry['worker_id'] }}">
+                        <select name="payment_method" class="form-select form-select-sm mb-2" required 
+                                onchange="showPaymentDetails({{ entry['id'] }}, this.value)">
+                            <option value="">Select Payment Method</option>
+                            <option value="UPI">UPI Payment</option>
+                            <option value="Cash">Cash Payment</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                        </select>
+                        <div id="upiDetails_{{ entry['id'] }}" class="payment-details" style="display:none;">
+                            <div class="input-group input-group-sm">
+                                <input type="text" name="upi_id" class="form-control form-control-sm" 
+                                       placeholder="Enter UPI ID">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                        onclick="loadLastPaymentDetails({{ entry['id'] }})">
+                                    Last Used
+                                </button>
+                            </div>
+                        </div>
+                        <div id="bankDetails_{{ entry['id'] }}" class="payment-details" style="display:none;">
+                            <div class="input-group input-group-sm mb-2">
+                                <input type="text" name="account_number" class="form-control form-control-sm" 
+                                       placeholder="Account Number">
+                                <input type="text" name="ifsc_code" class="form-control form-control-sm" 
+                                       placeholder="IFSC Code">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                        onclick="loadLastPaymentDetails({{ entry['id'] }})">
+                                    Last Used
+                                </button>
+                            </div>
+                        </div>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if not entry['is_paid'] %}
+                        <div class="mb-2">
+                            <textarea name="payment_comment" class="form-control form-control-sm" 
+                                    placeholder="Add payment note (optional)" rows="2"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-primary" form="paymentForm_{{ entry['id'] }}">
+                            Process Payment
+                        </button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% if entry['is_paid'] and entry.get('payment_details') %}
+            <tr class="table-light">
+                <td colspan="8">
+                    <small class="text-muted">
+                        {% set details = eval(entry['payment_details']) %}
+                        <strong>Payment Info:</strong> 
+                        Processed on {{ details['timestamp'] }} by {{ details['admin_username'] }}
+                        {% if entry.get('payment_comment') %}
+                            <br><strong>Note:</strong> {{ entry['payment_comment'] }}
+                        {% endif %}
+                    </small>
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Payment Instructions Modal -->
+<div class="modal fade" id="paymentInstructions" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Payment Instructions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <h6>UPI Payment</h6>
+                    <ul>
+                        <li>Ensure the UPI ID is valid and active</li>
+                        <li>Verify the amount before processing</li>
+                        <li>Keep the payment confirmation for reference</li>
+                    </ul>
+                </div>
+                <div class="mb-3">
+                    <h6>Cash Payment</h6>
+                    <ul>
+                        <li>Count the amount carefully</li>
+                        <li>Issue a receipt to the worker</li>
+                        <li>Add a note about the denominations if needed</li>
+                    </ul>
+                </div>
+                <div class="mb-3">
+                    <h6>Bank Transfer</h6>
+                    <ul>
+                        <li>Double-check account details</li>
+                        <li>Verify IFSC code format</li>
+                        <li>Save transaction reference number in notes</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showPaymentDetails(entryId, method) {
+    // Hide all payment details first
+    document.querySelectorAll(`#paymentForm_${entryId} .payment-details`).forEach(div => {
+        div.style.display = 'none';
+    });
+    
+    // Show relevant payment details based on selection
+    if (method === 'UPI') {
+        document.getElementById(`upiDetails_${entryId}`).style.display = 'block';
+    } else if (method === 'Bank Transfer') {
+        document.getElementById(`bankDetails_${entryId}`).style.display = 'block';
+    }
+}
+
+let bulkPaymentMode = false;
+
+function toggleBulkPayment() {
+    bulkPaymentMode = !bulkPaymentMode;
+    const form = document.getElementById('bulkPaymentForm');
+    const table = document.querySelector('.table');
+    
+    form.style.display = bulkPaymentMode ? 'block' : 'none';
+    
+    // Show/hide checkboxes
+    document.querySelectorAll('.bulk-payment-check').forEach(checkbox => {
+        checkbox.style.display = bulkPaymentMode ? 'inline' : 'none';
+    });
+    
+    // Update table header
+    const headerRow = table.querySelector('thead tr');
+    const bulkHeader = headerRow.querySelector('.bulk-header');
+    if (bulkPaymentMode && !bulkHeader) {
+        const th = document.createElement('th');
+        th.className = 'bulk-header';
+        th.style.width = '40px';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'form-check-input';
+        checkbox.onclick = toggleAllPayments;
+        th.appendChild(checkbox);
+        headerRow.insertBefore(th, headerRow.firstChild);
+    } else if (!bulkPaymentMode && bulkHeader) {
+        headerRow.removeChild(bulkHeader);
+    }
+}
+
+async function loadLastPaymentDetails(entryId) {
+    const form = document.getElementById(`paymentForm_${entryId}`);
+    const workerId = form.dataset.workerId;
+    
+    try {
+        const response = await fetch(`/worker/payment-details/${workerId}`);
+        if (!response.ok) throw new Error('Failed to fetch payment details');
+        
+        const data = await response.json();
+        if (!data.payment_method) {
+            alert('No previous payment details found for this worker');
+            return;
+        }
+        
+        // Set the payment method
+        const methodSelect = form.querySelector('[name="payment_method"]');
+        methodSelect.value = data.payment_method;
+        showPaymentDetails(entryId, data.payment_method);
+        
+        // Fill in the details based on payment method
+        if (data.payment_method === 'UPI' && data.payment_details.details.upi_id) {
+            form.querySelector('[name="upi_id"]').value = data.payment_details.details.upi_id;
+        } else if (data.payment_method === 'Bank Transfer') {
+            if (data.payment_details.details.account_number) {
+                form.querySelector('[name="account_number"]').value = data.payment_details.details.account_number;
+            }
+            if (data.payment_details.details.ifsc_code) {
+                form.querySelector('[name="ifsc_code"]').value = data.payment_details.details.ifsc_code;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading payment details:', error);
+        alert('Failed to load previous payment details');
+    }
+}
+
+// Add error handling for payment form submission
+document.addEventListener('DOMContentLoaded', function() {
+    const forms = document.querySelectorAll('form[id^="paymentForm_"]');
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const method = this.querySelector('[name="payment_method"]').value;
+            
+            if (method === 'UPI') {
+                const upiId = this.querySelector('[name="upi_id"]').value;
+                if (!upiId) {
+                    e.preventDefault();
+                    alert('Please enter UPI ID');
+                    return;
+                }
+                if (!upiId.includes('@')) {
+                    e.preventDefault();
+                    alert('Please enter a valid UPI ID (should contain @)');
+                    return;
+                }
+            } else if (method === 'Bank Transfer') {
+                const accNum = this.querySelector('[name="account_number"]').value;
+                const ifsc = this.querySelector('[name="ifsc_code"]').value;
+                
+                if (!accNum || !ifsc) {
+                    e.preventDefault();
+                    alert('Please enter both Account Number and IFSC Code');
+                    return;
+                }
+                if (!/^[A-Za-z]{4}0[A-Za-z0-9]{6}$/.test(ifsc)) {
+                    e.preventDefault();
+                    alert('Please enter a valid IFSC Code');
+                    return;
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

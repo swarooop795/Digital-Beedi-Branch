@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Payment Reports & Analysis</h2>
+
+<!-- Date Range Selector -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form id="reportFilterForm" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Date Range</label>
+                <select class="form-select" name="date_range" id="dateRange">
+                    <option value="7">Last 7 days</option>
+                    <option value="30" selected>Last 30 days</option>
+                    <option value="90">Last 3 months</option>
+                    <option value="180">Last 6 months</option>
+                    <option value="365">Last year</option>
+                    <option value="custom">Custom range</option>
+                </select>
+            </div>
+            <div class="col-md-3" id="customDateInputs" style="display: none;">
+                <label class="form-label">Custom Range</label>
+                <div class="input-group">
+                    <input type="date" class="form-control" name="start_date">
+                    <input type="date" class="form-control" name="end_date">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Worker</label>
+                <select class="form-select" name="worker_id">
+                    <option value="">All Workers</option>
+                    {% for worker in workers %}
+                    <option value="{{ worker.id }}">{{ worker.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Payment Status</label>
+                <select class="form-select" name="payment_status">
+                    <option value="">All Status</option>
+                    <option value="paid">Paid</option>
+                    <option value="pending">Pending</option>
+                    <option value="overdue">Overdue</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-filter"></i> Apply Filters
+                </button>
+                <button type="button" class="btn btn-success ms-2" onclick="exportReport()">
+                    <i class="fas fa-file-excel"></i> Export Report
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Paid</h5>
+                <h3>₹{{ "{:,.2f}".format(summary.total_paid) }}</h3>
+                <small>{{ summary.payment_count }} payments</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <h5 class="card-title">Average Daily</h5>
+                <h3>₹{{ "{:,.2f}".format(summary.avg_daily) }}</h3>
+                <small>Per working day</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">On-time Rate</h5>
+                <h3>{{ "{:.1f}%".format(summary.ontime_rate) }}</h3>
+                <small>Payments made on time</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Active Workers</h5>
+                <h3>{{ summary.active_workers }}</h3>
+                <small>Received payments</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Payment Trends</h5>
+                <canvas id="paymentTrendsChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Payment Methods</h5>
+                <canvas id="paymentMethodsChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Worker Performance -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Worker Performance</h5>
+        <div class="table-responsive">
+            <table class="table table-hover" id="workerPerformance">
+                <thead>
+                    <tr>
+                        <th>Worker</th>
+                        <th>Total Earnings</th>
+                        <th>Total Beedis</th>
+                        <th>Average Daily</th>
+                        <th>Payment Rate</th>
+                        <th>Trend</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for worker in worker_stats %}
+                    <tr>
+                        <td>{{ worker.name }}</td>
+                        <td>₹{{ "{:,.2f}".format(worker.total_earnings) }}</td>
+                        <td>{{ "{:,}".format(worker.total_beedis) }}</td>
+                        <td>₹{{ "{:,.2f}".format(worker.avg_daily) }}</td>
+                        <td>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar bg-success" 
+                                     style="width: {{ worker.payment_rate }}%">
+                                    {{ "{:.1f}%".format(worker.payment_rate) }}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <canvas class="worker-trend" 
+                                   data-values="{{ worker.trend_data }}"
+                                   height="30"></canvas>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Timeline -->
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Payment Timeline</h5>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Worker</th>
+                        <th>Amount</th>
+                        <th>Method</th>
+                        <th>Status</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in timeline %}
+                    <tr>
+                        <td>{{ payment.date }}</td>
+                        <td>{{ payment.worker_name }}</td>
+                        <td>₹{{ "{:,.2f}".format(payment.amount) }}</td>
+                        <td>{{ payment.method }}</td>
+                        <td>
+                            <span class="badge bg-{{ payment.status_color }}">
+                                {{ payment.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary"
+                                    onclick="showPaymentDetails({{ payment.id }})">
+                                View
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Details Modal -->
+<div class="modal fade" id="paymentDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Payment Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="paymentModalContent">
+                <!-- Filled dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Date range handling
+document.getElementById('dateRange').addEventListener('change', function() {
+    const customInputs = document.getElementById('customDateInputs');
+    customInputs.style.display = this.value === 'custom' ? 'block' : 'none';
+});
+
+// Initialize charts
+document.addEventListener('DOMContentLoaded', function() {
+    // Payment Trends Chart
+    const trendsCtx = document.getElementById('paymentTrendsChart').getContext('2d');
+    new Chart(trendsCtx, {
+        type: 'line',
+        data: {
+            labels: {{ trend_labels | tojson | safe }},
+            datasets: [{
+                label: 'Daily Payments',
+                data: {{ trend_values | tojson | safe }},
+                borderColor: '#0d6efd',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Payment Methods Chart
+    const methodsCtx = document.getElementById('paymentMethodsChart').getContext('2d');
+    new Chart(methodsCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ method_labels | tojson | safe }},
+            datasets: [{
+                data: {{ method_values | tojson | safe }},
+                backgroundColor: ['#0d6efd', '#198754', '#ffc107']
+            }]
+        },
+        options: {
+            responsive: true
+        }
+    });
+
+    // Worker Trend Sparklines
+    document.querySelectorAll('.worker-trend').forEach(canvas => {
+        const values = JSON.parse(canvas.dataset.values);
+        const ctx = canvas.getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array(values.length).fill(''),
+                datasets: [{
+                    data: values,
+                    borderColor: '#0d6efd',
+                    borderWidth: 1,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        display: false
+                    },
+                    y: {
+                        display: false
+                    }
+                }
+            }
+        });
+    });
+});
+
+function showPaymentDetails(paymentId) {
+    fetch(`/payment-report/details/${paymentId}`)
+        .then(response => response.json())
+        .then(data => {
+            const content = `
+                <div class="container-fluid">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h6>Worker Information</h6>
+                            <p>
+                                Name: ${data.worker_name}<br>
+                                ID: ${data.worker_id}<br>
+                                Contact: ${data.worker_contact}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Payment Information</h6>
+                            <p>
+                                Amount: ₹${data.amount}<br>
+                                Method: ${data.method}<br>
+                                Date: ${data.date}<br>
+                                Status: ${data.status}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>Transaction Details</h6>
+                            <pre class="bg-light p-2">${JSON.stringify(data.details, null, 2)}</pre>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('paymentModalContent').innerHTML = content;
+            new bootstrap.Modal(document.getElementById('paymentDetailsModal')).show();
+        });
+}
+
+function exportReport() {
+    const form = document.getElementById('reportFilterForm');
+    const formData = new FormData(form);
+    const queryString = new URLSearchParams(formData).toString();
+    window.location.href = `/payment-report/export?${queryString}`;
+}
+</script>
+{% endblock %}

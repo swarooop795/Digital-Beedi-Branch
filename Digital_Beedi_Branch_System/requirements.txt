@@ -1,0 +1,13 @@
+flask==2.3.3
+flask-login==0.6.2
+flask-wtf==1.1.1
+python-dotenv==1.0.0
+werkzeug==3.0.1
+# sqlite3 is part of the Python standard library, no need to install
+
+# Runtime deps used by reporting/export features
+pandas
+XlsxWriter
+pyotp
+razorpay
+pytest

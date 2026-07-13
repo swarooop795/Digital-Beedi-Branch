@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Workers Management</h2>
+        <a href="{{ url_for('worker_routes.add_worker') }}" class="btn btn-success">
+            <i class="fas fa-plus"></i> Add Worker
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Contact</th>
+                            <th>Address</th>
+                            <th>Aadhar Number</th>
+                            <th>Login Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for worker in workers %}
+                        <tr>
+                            <td>{{ worker.id }}</td>
+                            <td>{{ worker.name }}</td>
+                            <td>{{ worker.contact }}</td>
+                            <td>{{ worker.address }}</td>
+                            <td>{{ worker.aadhar_number }}</td>
+                            <td>
+                                {% if worker.user_id %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-warning">Not Set Up</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-primary" 
+                                            onclick="setCredentials('{{ worker.id }}', '{{ worker.name }}', '{{ worker.linked_username if worker.linked_username else '' }}')">
+                                        <i class="fas fa-key"></i>
+                                        {% if worker.user_id %}
+                                        Reset Login
+                                        {% else %}
+                                        Set Login
+                                        {% endif %}
+                                    </button>
+                                                {% if session.get('role') == 'admin' %}
+                                                <a href="{{ url_for('main.edit_worker', worker_id=worker.id) }}" 
+                                                   class="btn btn-sm btn-info">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </a>
+                                                {% endif %}
+                                    <a href="{{ url_for('main.worker_details', worker_id=worker.id) }}" 
+                                       class="btn btn-sm btn-secondary">
+                                        <i class="fas fa-eye"></i> Details
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Credentials Modal -->
+<div class="modal fade" id="credentialsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Set Worker Login Credentials</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="credentialsForm">
+                    <input type="hidden" id="workerId" name="worker_id">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                        <div class="form-text">Worker can log in with this username or their ID</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label">Confirm Password</label>
+                        <input type="password" class="form-control" id="confirmPassword" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveCredentials()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let credentialsModal;
+
+function initializeModal() {
+    const modalElement = document.getElementById('credentialsModal');
+    if (modalElement && !credentialsModal) {
+        credentialsModal = new bootstrap.Modal(modalElement);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeModal();
+});
+
+function setCredentials(workerId, workerName, linkedUsername) {
+    // Ensure modal is initialized
+    if (!credentialsModal) {
+        initializeModal();
+    }
+
+    document.getElementById('workerId').value = workerId;
+    // If there's already a linked username, prefill it (reset case), else use a default from name
+    if (linkedUsername && linkedUsername.trim().length > 0) {
+        document.getElementById('username').value = linkedUsername;
+    } else {
+        document.getElementById('username').value = workerName.toLowerCase().replace(/\s+/g, '_');
+    }
+    document.getElementById('password').value = '';
+    document.getElementById('confirmPassword').value = '';
+
+    if (credentialsModal) {
+        credentialsModal.show();
+    } else {
+        alert('Modal failed to initialize. Please refresh the page.');
+    }
+}
+
+function saveCredentials() {
+    const form = document.getElementById('credentialsForm');
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    if (password !== confirmPassword) {
+        alert('Passwords do not match!');
+        return;
+    }
+    
+    const formData = new FormData(form);
+    
+    fetch('{{ url_for("auth.set_worker_password") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            credentialsModal.hide();
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error saving credentials: ' + error);
+    });
+}
+</script>
+{% endblock %}

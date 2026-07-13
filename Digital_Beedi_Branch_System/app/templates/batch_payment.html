@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3>Batch Payment Processing</h3>
+            <div>
+                <button class="btn btn-success" onclick="processSelectedPayments()">
+                    <i class="fas fa-money-bill-wave"></i> Process Selected
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Payment Method Selection -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">Payment Method</label>
+                    <select class="form-select" id="batchPaymentMethod">
+                        <option value="">Select Payment Method</option>
+                        <option value="Cash">Cash</option>
+                        <option value="UPI">UPI</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                    </select>
+                </div>
+                <!-- Method-specific fields will be shown here -->
+                <div class="col-md-8" id="methodSpecificFields"></div>
+            </div>
+
+            <!-- Unpaid Entries Table -->
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>
+                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                            </th>
+                            <th>Worker</th>
+                            <th>Entry Date</th>
+                            <th>Quantity</th>
+                            <th>Price/Item</th>
+                            <th>Total Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in unpaid_entries %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" 
+                                       class="entry-checkbox" 
+                                       value="{{ entry.id }}"
+                                       data-amount="{{ entry.price * entry.quantity }}"
+                                       data-worker="{{ entry.worker_name }}">
+                            </td>
+                            <td>{{ entry.worker_name }}</td>
+                            <td>{{ entry.entry_time }}</td>
+                            <td>{{ entry.quantity }}</td>
+                            <td>₹{{ "{:.2f}".format(entry.price) }}</td>
+                            <td>₹{{ "{:.2f}".format(entry.price * entry.quantity) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Summary Card -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5>Payment Summary</h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <p>Selected Entries: <span id="selectedCount">0</span></p>
+                        </div>
+                        <div class="col-md-4">
+                            <p>Total Workers: <span id="workerCount">0</span></p>
+                        </div>
+                        <div class="col-md-4">
+                            <p>Total Amount: ₹<span id="totalAmount">0.00</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Processing Modal -->
+<div class="modal fade" id="processingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Processing Payments</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="progressContainer">
+                        <!-- Progress items will be added here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let methodFields = {
+    'UPI': `
+        <div class="row">
+            <div class="col-md-6">
+                <label class="form-label">UPI ID</label>
+                <input type="text" class="form-control" id="upiId">
+            </div>
+        </div>
+    `,
+    'Bank Transfer': `
+        <div class="row">
+            <div class="col-md-6">
+                <label class="form-label">Account Number</label>
+                <input type="text" class="form-control" id="accountNumber">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">IFSC Code</label>
+                <input type="text" class="form-control" id="ifscCode">
+            </div>
+        </div>
+    `,
+    'Cash': `
+        <div class="row">
+            <div class="col-md-12">
+                <label class="form-label">Denominations (optional)</label>
+                <input type="text" class="form-control" id="cashDenominations" 
+                       placeholder="e.g., 2x2000, 5x500, etc.">
+            </div>
+        </div>
+    `
+};
+
+document.getElementById('batchPaymentMethod').addEventListener('change', function() {
+    let container = document.getElementById('methodSpecificFields');
+    container.innerHTML = methodFields[this.value] || '';
+});
+
+function updateSummary() {
+    let checkboxes = document.querySelectorAll('.entry-checkbox:checked');
+    let totalAmount = 0;
+    let workers = new Set();
+    
+    checkboxes.forEach(cb => {
+        totalAmount += parseFloat(cb.dataset.amount);
+        workers.add(cb.dataset.worker);
+    });
+    
+    document.getElementById('selectedCount').textContent = checkboxes.length;
+    document.getElementById('workerCount').textContent = workers.size;
+    document.getElementById('totalAmount').textContent = totalAmount.toFixed(2);
+}
+
+function toggleSelectAll() {
+    let checked = document.getElementById('selectAll').checked;
+    document.querySelectorAll('.entry-checkbox').forEach(cb => {
+        cb.checked = checked;
+    });
+    updateSummary();
+}
+
+document.querySelectorAll('.entry-checkbox').forEach(cb => {
+    cb.addEventListener('change', updateSummary);
+});
+
+async function processSelectedPayments() {
+    let method = document.getElementById('batchPaymentMethod').value;
+    if (!method) {
+        alert('Please select a payment method');
+        return;
+    }
+    
+    let details = {};
+    if (method === 'UPI') {
+        details.upi_id = document.getElementById('upiId').value;
+        if (!details.upi_id) {
+            alert('Please enter UPI ID');
+            return;
+        }
+    } else if (method === 'Bank Transfer') {
+        details.account_number = document.getElementById('accountNumber').value;
+        details.ifsc_code = document.getElementById('ifscCode').value;
+        if (!details.account_number || !details.ifsc_code) {
+            alert('Please enter all bank details');
+            return;
+        }
+    } else if (method === 'Cash') {
+        details.denominations = document.getElementById('cashDenominations').value;
+    }
+    
+    let entries = Array.from(document.querySelectorAll('.entry-checkbox:checked'))
+                      .map(cb => cb.value);
+    
+    if (entries.length === 0) {
+        alert('Please select entries to process');
+        return;
+    }
+    
+    // Show processing modal
+    let modal = new bootstrap.Modal(document.getElementById('processingModal'));
+    modal.show();
+    
+    let container = document.getElementById('progressContainer');
+    container.innerHTML = '';
+    
+    try {
+        let response = await fetch('/wages/batch-pay', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                entries: entries,
+                payment_method: method,
+                payment_details: details
+            })
+        });
+        
+        let result = await response.json();
+        if (result.success) {
+            container.innerHTML = `
+                <div class="alert alert-success">
+                    All payments processed successfully!
+                    <hr>
+                    <p>Total Processed: ${result.processed}</p>
+                    <p>Total Amount: ₹${result.total_amount}</p>
+                    <div class="d-grid gap-2">
+                        <a href="/payment-dashboard" class="btn btn-primary">
+                            View Payment Dashboard
+                        </a>
+                    </div>
+                </div>
+            `;
+            
+            // Reload page after 2 seconds
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        } else {
+            container.innerHTML = `
+                <div class="alert alert-danger">
+                    Error processing payments: ${result.error}
+                </div>
+            `;
+        }
+    } catch (error) {
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                Error processing payments. Please try again.
+            </div>
+        `;
+    }
+}
+</script>
+{% endblock %}

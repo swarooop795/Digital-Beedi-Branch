@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Notifications</h2>
+<div class="mb-3">
+    <button id="clear-all-notifications" class="btn btn-sm btn-danger">Clear All</button>
+</div>
+<ul class="list-group">
+    {% for note in notifications %}
+    <li class="list-group-item{% if not note.get('is_read', 0) %} list-group-item-info{% endif %}">
+        {% if note.get('title') %}
+            {% if note.get('url') %}
+                <a href="{{ url_for('main.notifications') }}">{{ note['title'] }}</a>
+            {% else %}
+                {{ note['title'] }}
+            {% endif %}
+            <div class="small text-muted">{{ note.get('message') }}</div>
+        {% else %}
+            {{ note.get('message') }}
+        {% endif %}
+        <div class="float-end">
+            <small class="text-muted me-2">{{ note.get('created_at') }}</small>
+                {% if note.get('url') %}
+                <a href="{{ url_for('worker_routes.open_notification', note_id=note['id']) }}" class="btn btn-sm btn-outline-primary">Open</a>
+            {% endif %}
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('clear-all-notifications')?.addEventListener('click', function(){
+    if (!confirm('Mark all notifications as read?')) return;
+    fetch('{{ url_for("main.clear_notifications") }}', { method: 'POST' })
+    .then(res => {
+        if (res.ok) window.location.reload();
+        else alert('Could not clear notifications');
+    }).catch(()=> alert('Could not clear notifications'));
+});
+</script>
+{% endblock %}

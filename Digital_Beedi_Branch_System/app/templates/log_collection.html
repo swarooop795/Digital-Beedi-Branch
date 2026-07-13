@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Log Daily Collection & Payment</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        <div class="mb-3">
+                            <label for="worker_id" class="form-label">Select Worker</label>
+                            <select class="form-control" id="worker_id" name="worker_id" required>
+                                <option value="">-- Select Worker --</option>
+                                {% for w in workers %}
+                                <option value="{{ w.id }}" data-rate="{{ w.rate or default_rate }}">{{ w.name }} (ID: {{ w.id }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">Quantity Collected</label>
+                            <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="rate" class="form-label">Rate (₹/beedi)</label>
+                            <input type="text" class="form-control" id="rate" name="rate" value="{{ default_rate }}" readonly>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Total Amount Payable</label>
+                            <div id="total" class="form-control">₹0.00</div>
+                        </div>
+
+                        <button class="btn btn-success" type="submit">Approve & Send Notification</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    const qty = document.getElementById('quantity');
+    const rateInput = document.getElementById('rate');
+    const total = document.getElementById('total');
+    const workerSelect = document.getElementById('worker_id');
+
+    function updateRateFromWorker(){
+        const opt = workerSelect.options[workerSelect.selectedIndex];
+        const r = parseFloat(opt ? (opt.dataset.rate || rateInput.value) : rateInput.value) || 0;
+        rateInput.value = r.toFixed(2);
+        return r;
+    }
+
+    function updateTotal(){
+        const q = parseInt(qty.value || '0');
+        const r = updateRateFromWorker();
+        total.textContent = '₹' + (q * r).toFixed(2);
+    }
+
+    workerSelect.addEventListener('change', updateTotal);
+    qty.addEventListener('input', updateTotal);
+    // initialize
+    updateTotal();
+});
+</script>
+{% endblock %}
