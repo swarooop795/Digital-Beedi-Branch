@@ -81,6 +81,3 @@ Run the application:
 
 <img width="692" height="223" alt="image" src="https://github.com/user-attachments/assets/fcdb929b-c51b-4ac0-bddf-c71aeb9f9701" />
 
-Open in browser:
-
-http://127.0.0.1:5000
