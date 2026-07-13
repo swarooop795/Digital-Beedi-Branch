@@ -79,8 +79,7 @@ pip install -r requirements.txt
 
 Run the application:
 
-python app.py
-
+<img width="692" height="223" alt="image" src="https://github.com/user-attachments/assets/fcdb929b-c51b-4ac0-bddf-c71aeb9f9701" />
 
 Open in browser:
 
