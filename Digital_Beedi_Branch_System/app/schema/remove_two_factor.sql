@@ -1,6 +1,4 @@
--- Migration: remove two_factor_secret column from users table (SQLite)
--- SQLite doesn't support DROP COLUMN directly on older versions; recreate the table without the column.
-PRAGMA foreign_keys=off;
+
 BEGIN TRANSACTION;
 
 -- Create a new table without the two_factor_secret column
