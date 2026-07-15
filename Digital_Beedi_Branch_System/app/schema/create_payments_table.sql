@@ -1,5 +1,3 @@
--- Migration: Create payments table used by routes and reporting
--- Save as a new migration file and run it against the SQLite DB or add to init_db() if you want it created at startup.
 
 CREATE TABLE IF NOT EXISTS payments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
