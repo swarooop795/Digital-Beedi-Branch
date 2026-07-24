@@ -27,7 +27,7 @@ def admin_login():
         username = request.form['username']
         password = request.form['password']
         
-        # Do not enforce password strength on login (only on creation).
+        # Do not enforce password strength on login.
         # Previously this check blocked valid existing accounts using older passwords.
             
         user = User.get_by_username(username)
