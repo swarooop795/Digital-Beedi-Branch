@@ -8,13 +8,14 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here')
 app.config['RAZORPAY_KEY_ID'] = os.getenv('RAZORPAY_KEY_ID')
 app.config['RAZORPAY_KEY_SECRET'] = os.getenv('RAZORPAY_KEY_SECRET')
 app.config['RAZORPAY_ACCOUNT_NUMBER'] = os.getenv('RAZORPAY_ACCOUNT_NUMBER', '2323230032510196')
-# Low-stock threshold used in templates (can be overridden via environment variable)
+# Low-stock threshold used in templates
 try:
     app.config['LOW_STOCK_THRESHOLD'] = int(os.getenv('LOW_STOCK_THRESHOLD', '10'))
 except Exception:
     app.config['LOW_STOCK_THRESHOLD'] = 10
 
 # Setup basic file logging for uncaught exceptions so 500s are easier to diagnose locally
+
 import logging
 from logging.handlers import RotatingFileHandler
 import uuid
