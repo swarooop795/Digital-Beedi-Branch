@@ -56,7 +56,7 @@ Most beedi workers and contractors have very limited digital literacy, making it
 
 Solution:
 
-We developed a simple, intuitive, icon-based interface that works on basic smartphones. The system minimizes text input and supports step-by-step guided navigation.
+We developed a simple, intuitive, icon-based interface that works on browser. The system minimizes text input and supports step-by-step guided navigation.
 
 # 📊 Expected Outcome
 
