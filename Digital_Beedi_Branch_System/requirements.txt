@@ -10,3 +10,4 @@ XlsxWriter
 pyotp
 razorpay
 pytest
+gunicorn
