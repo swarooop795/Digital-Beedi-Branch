@@ -4,10 +4,10 @@ from app.models.database import init_db, close_connection, get_db
 from app.models.user import User
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['RAZORPAY_KEY_ID'] = os.getenv('RAZORPAY_KEY_ID')
 app.config['RAZORPAY_KEY_SECRET'] = os.getenv('RAZORPAY_KEY_SECRET')
-app.config['RAZORPAY_ACCOUNT_NUMBER'] = os.getenv('RAZORPAY_ACCOUNT_NUMBER', '2323230032510196')
+app.config['RAZORPAY_ACCOUNT_NUMBER'] = os.getenv('RAZORPAY_ACCOUNT_NUMBER')
 # Low-stock threshold used in templates
 try:
     app.config['LOW_STOCK_THRESHOLD'] = int(os.getenv('LOW_STOCK_THRESHOLD', '10'))
