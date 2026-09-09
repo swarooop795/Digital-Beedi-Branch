@@ -1,4 +1,4 @@
-from flask import render_template, session, redirect, url_for, flash, request, jsonify
+from flask import Blueprint, render_template, session, redirect, url_for, flash, request, jsonify
 from app.models.database import get_db
 from app.utils.notifications import send_worker_notification
 from datetime import datetime
