@@ -3,12 +3,20 @@ import os
 from app.models.database import init_db, close_connection, get_db
 from app.models.user import User
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
+app = Flask(__name__)
+
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 if not SECRET_KEY:
-    raise RuntimeError("SECRET_KEY environment variable is not set")
+    raise RuntimeError(
+        "SECRET_KEY environment variable is not configured."
+    )
 
-app = Flask(__name__)
+app.config['SECRET_KEY'] = SECRET_KEY
 app.config['SECRET_KEY'] = SECRET_KEY
 app.config['RAZORPAY_KEY_ID'] = os.getenv('RAZORPAY_KEY_ID')
 app.config['RAZORPAY_KEY_SECRET'] = os.getenv('RAZORPAY_KEY_SECRET')
