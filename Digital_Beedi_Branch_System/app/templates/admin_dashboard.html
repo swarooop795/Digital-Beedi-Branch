@@ -7,4 +7,12 @@
 <a href="/beedi-entry" class="btn btn-success">Add Beedi Entry</a>
 <a href="/log-collection" class="btn btn-info">Log Daily Collection & Payment</a>
 <a href="/todos" class="btn btn-warning">Todo List</a>
+<a
+    href="{{ url_for('inventory.inventory_admin') }}"
+    class="btn btn-dark">
+
+    <i class="fas fa-boxes-stacked"></i>
+    Inventory Management
+
+</a>
 {% endblock %}
