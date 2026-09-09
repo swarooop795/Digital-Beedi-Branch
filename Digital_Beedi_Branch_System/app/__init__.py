@@ -75,7 +75,11 @@ def handle_uncaught_exception(e):
     # Non-HTTP exceptions: log full traceback for debugging and show friendly page
     tb = traceback.format_exc()
     app.logger.error('Error id=%s path=%s method=%s user=%s\n%s', err_id, request.path, request.method, user, tb)
-    return render_template('error.html', error_id=err_id), 500
+    return f"""
+<h1>Internal Server Error</h1>
+<pre>{tb}</pre>
+<p>Error ID: {err_id}</p>
+""", 500
 
 
 # serve a simple empty favicon to avoid repeated 404/500 noise from browsers requesting /favicon.ico
