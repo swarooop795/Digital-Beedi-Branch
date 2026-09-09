@@ -17,6 +17,12 @@
                 <!-- Admin Navigation -->
                 <a class="nav-link" href="{{ url_for('main.admin_dashboard') }}">Dashboard</a>
                 <a class="nav-link" href="{{ url_for('worker_routes.workers') }}">Workers</a>
+                <a
+    class="nav-link"
+    href="{{ url_for('inventory.inventory_admin') }}">
+    <i class="fas fa-boxes-stacked"></i>
+    Inventory
+</a>
                 <a class="nav-link" href="{{ url_for('main.beedi_entry') }}">Beedi Entries</a>
                 <a class="nav-link" href="{{ url_for('main.payment_analytics') }}">Analytics</a>
                 <a class="nav-link" href="{{ url_for('payment_dashboard.payment_dashboard') }}">Payments</a>
