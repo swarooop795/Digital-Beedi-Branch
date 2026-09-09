@@ -8,7 +8,7 @@ from app.routes.main_routes import bp as main_bp, admin_required, generate_recei
 from app.utils.notifications import send_worker_notification
 import razorpay
 
-bp = main_bp
+bp = Blueprint("batch", __name__)
 
 
 @bp.route('/wages/batch')
