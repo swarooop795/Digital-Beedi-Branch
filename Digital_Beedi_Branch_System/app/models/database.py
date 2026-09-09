@@ -60,15 +60,17 @@ def init_db():
             FOREIGN KEY(worker_id) REFERENCES workers(id),
             FOREIGN KEY(admin_id) REFERENCES users(id)
         )''')
-        # Notifications table
-        cursor.execute('''CREATE TABLE IF NOT EXISTS notifications (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            message TEXT,
-            is_read INTEGER DEFAULT 0,
-            created_at TEXT,
-            FOREIGN KEY(user_id) REFERENCES users(id)
-        )''')
+        # Notification
+       cursor.execute('''CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    title TEXT,
+    message TEXT,
+    url TEXT,
+    is_read INTEGER DEFAULT 0,
+    created_at TEXT,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+)''')
         # Todo table
         cursor.execute('''CREATE TABLE IF NOT EXISTS todos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -79,31 +81,36 @@ def init_db():
             FOREIGN KEY(admin_id) REFERENCES users(id)
         )''')
         # Attendance table
-        cursor.execute('''CREATE TABLE IF NOT EXISTS attendance (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            worker_id INTEGER,
-            date TEXT,
-            status TEXT,
-            admin_id INTEGER,
-            FOREIGN KEY(worker_id) REFERENCES workers(id),
-            FOREIGN KEY(admin_id) REFERENCES users(id)
-        )''')
-        # Payments table (used by reporting and payment flows)
-        cursor.execute('''CREATE TABLE IF NOT EXISTS payments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            worker_id INTEGER NOT NULL,
-            amount REAL NOT NULL,
-            payment_method TEXT,
-            payment_details TEXT,
-            payment_comment TEXT,
-            receipt_number TEXT UNIQUE,
-            status TEXT DEFAULT 'pending',
-            payment_date TEXT,
-            created_by INTEGER,
-            created_at TEXT DEFAULT (datetime('now')),
-            FOREIGN KEY(worker_id) REFERENCES workers(id),
-            FOREIGN KEY(created_by) REFERENCES users(id)
-        )''')
+cursor.execute('''CREATE TABLE IF NOT EXISTS attendance (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    worker_id INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'present',
+    work_hours REAL DEFAULT 8,
+    timestamp TEXT,
+    admin_id INTEGER,
+    FOREIGN KEY(worker_id) REFERENCES workers(id),
+    FOREIGN KEY(admin_id) REFERENCES users(id)
+)''')
+   # Payment table 
+       cursor.execute('''CREATE TABLE IF NOT EXISTS payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    worker_id INTEGER NOT NULL,
+    amount REAL NOT NULL,
+    payment_method TEXT,
+    payment_details TEXT,
+    payment_comment TEXT,
+    receipt_number TEXT UNIQUE,
+    status TEXT DEFAULT 'pending',
+    payment_date TEXT,
+    created_by INTEGER,
+    confirmed_by INTEGER,
+    confirmed_at TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY(worker_id) REFERENCES workers(id),
+    FOREIGN KEY(created_by) REFERENCES users(id),
+    FOREIGN KEY(confirmed_by) REFERENCES users(id)
+)''')
 
         # Payment schedules for future/recurring payments
         cursor.execute('''CREATE TABLE IF NOT EXISTS payment_schedules (
@@ -161,6 +168,38 @@ def init_db():
             FOREIGN KEY(payment_id) REFERENCES payments(id),
             FOREIGN KEY(processed_by_admin_id) REFERENCES users(id)
         )''')
+       # Inventory table
+  cursor.execute('''CREATE TABLE IF NOT EXISTS inventory (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    item_name TEXT NOT NULL UNIQUE,
+    quantity REAL NOT NULL DEFAULT 0,
+    type_of_item TEXT NOT NULL,
+    last_updated TEXT NOT NULL
+)''')
+
+# Ensure required columns exist in existing databases
+def ensure_column(table, column, column_type):
+    columns = [row[1] for row in db.execute(
+        f"PRAGMA table_info({table})"
+    ).fetchall()]
+
+    if column not in columns:
+        try:
+            db.execute(
+                f"ALTER TABLE {table} ADD COLUMN {column} {column_type}"
+            )
+        except sqlite3.OperationalError:
+            pass
+
+
+ensure_column('attendance', 'work_hours', 'REAL DEFAULT 8')
+ensure_column('attendance', 'timestamp', 'TEXT')
+
+ensure_column('notifications', 'title', 'TEXT')
+ensure_column('notifications', 'url', 'TEXT')
+
+ensure_column('payments', 'confirmed_by', 'INTEGER')
+ensure_column('payments', 'confirmed_at', 'TEXT')
         db.commit()
         # Ensure beedi_entries has payment_id / payment_details / payment_comment columns for linking payments
         try:
