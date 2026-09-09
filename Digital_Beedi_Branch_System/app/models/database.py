@@ -24,7 +24,7 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
-            role TEXT NOT NULL CHECK(role IN ('admin', 'customer')),
+            role TEXT NOT NULL CHECK(role IN ('admin', 'customer', 'worker')),
             customer_of INTEGER,
             FOREIGN KEY(customer_of) REFERENCES users(id)
         )''')
