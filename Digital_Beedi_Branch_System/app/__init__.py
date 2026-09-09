@@ -81,7 +81,17 @@ from flask import g
 app.teardown_appcontext(close_connection)
 
 
-from app.routes import main_routes, worker_routes, inventory_routes, analytics_routes, auth_routes, payment_dashboard_routes, payment_routes, batch_payment_routes
+from app.routes import (
+    main_routes,
+    worker_routes,
+    inventory_routes,
+    analytics_routes,
+    auth_routes,
+    attendance_routes,
+    payment_dashboard_routes,
+    payment_routes,
+    batch_payment_routes
+)
 from app.payment_report import bp as payment_report_bp
 
 # Register blueprints
@@ -91,7 +101,7 @@ app.register_blueprint(inventory_routes.bp)
 app.register_blueprint(analytics_routes.bp)
 app.register_blueprint(auth_routes.bp)
 app.register_blueprint(payment_report_bp)
-
+app.register_blueprint(attendance_routes.bp)
 
 @app.context_processor
 def inject_unread_notifications():
