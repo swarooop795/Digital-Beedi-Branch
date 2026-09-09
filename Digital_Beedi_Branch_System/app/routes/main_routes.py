@@ -1092,7 +1092,19 @@ def update_worker(worker_id):
     # determine which columns exist in workers table so updates are safe
     cols = [r['name'] for r in db.execute("PRAGMA table_info(workers)").fetchall()]
 
-    fields = ['name', 'age', 'contact', 'address', 'aadhar', 'bank_account', 'ifsc_code', 'upi_id', 'rate', 'preferred_payment_method']
+    fields = [
+    'name',
+    'age',
+    'contact',
+    'address',
+    'aadhar_number',
+    'bank_account',
+    'ifsc_code',
+    'upi_id',
+    'contractor',
+    'rate',
+    'preferred_payment_method'
+]
     updates = []
     params = []
     for f in fields:
