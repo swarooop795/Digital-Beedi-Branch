@@ -326,7 +326,7 @@ def mark_paid(entry_id):
         
         db.commit()
         flash(f'Payment processed successfully. Receipt number: {receipt_number}', 'success')
-        return redirect(url_for('main.payment_receipt', payment_id=payment_id))
+        return redirect(url_for('payment.payment_receipt', payment_id=payment_id))
         
     except Exception as e:
         db.rollback()
