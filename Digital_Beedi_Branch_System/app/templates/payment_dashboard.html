@@ -105,7 +105,7 @@
                             </td>
                             <td>{{ payment.payment_date }}</td>
                             <td>
-                                <a href="{{ url_for('main.payment_receipt', payment_id=payment.id) }}" 
+                                <a href="{{ url_for('payment.payment_receipt', payment_id=payment.id) }}" 
                                    class="btn btn-sm btn-info">
                                     <i class="fas fa-receipt"></i>
                                 </a>
