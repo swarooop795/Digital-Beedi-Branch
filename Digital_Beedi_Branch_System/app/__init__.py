@@ -102,6 +102,7 @@ app.register_blueprint(analytics_routes.bp)
 app.register_blueprint(auth_routes.bp)
 app.register_blueprint(payment_report_bp)
 app.register_blueprint(attendance_routes.bp)
+app.register_blueprint(main_routes.bp)
 
 @app.context_processor
 def inject_unread_notifications():
