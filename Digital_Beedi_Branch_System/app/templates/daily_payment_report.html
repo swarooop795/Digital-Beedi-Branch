@@ -18,7 +18,7 @@
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-search"></i> View Report
                 </button>
-                <a href="{{ url_for('main.export_payment_report', from_date=from_date, to_date=to_date) }}" 
+                <a href="{{ url_for('payment_report.export_payment_report', from_date=from_date, to_date=to_date) }}" 
                    class="btn btn-success">
                     <i class="fas fa-download"></i> Export
                 </a>
