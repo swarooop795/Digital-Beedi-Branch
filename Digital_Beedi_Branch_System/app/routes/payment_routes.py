@@ -141,7 +141,7 @@ def process_payment(payment_id):
         if worker_user and worker_user['user_id']:
             send_worker_notification(worker_user['user_id'], 'Payment Processed',
                                      f'Payment of ₹{payment["amount"]} has been processed. Receipt: {receipt}',
-                                     url_for('main.payment_receipt', payment_id=payment_id))
+                                     url_for('payment.payment_receipt', payment_id=payment_id))
 
         db.commit()
         return jsonify({'success': True})
