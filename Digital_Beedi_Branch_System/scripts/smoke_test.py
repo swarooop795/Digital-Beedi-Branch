@@ -54,7 +54,7 @@ def run_smoke():
 
         s = requests.Session()
         login_url = 'http://127.0.0.1:5000/admin-login'
-        resp = s.post(login_url, data={'username':'babuadmin','password':'babu@8088'}, allow_redirects=True)
+        resp = s.post(login_url, data={'username':'babu','password':'babuadmin'}, allow_redirects=True)
         print('Login POST status:', resp.status_code)
 
         # Check admin dashboard (login should land here directly for admin)
