@@ -1,4 +1,4 @@
-from flask import render_template, session, redirect, url_for
+from flask import Blueprint, render_template, session, redirect, url_for
 from app.models.database import get_db
 from datetime import datetime
 
