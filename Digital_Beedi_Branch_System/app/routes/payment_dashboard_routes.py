@@ -5,8 +5,8 @@ from datetime import datetime
 # reuse main blueprint and admin helper
 from app.routes.main_routes import bp as main_bp, admin_required
 
-bp = main_bp
 
+bp = Blueprint("payment_dashboard", __name__)
 
 @bp.route('/payment-dashboard')
 @admin_required
