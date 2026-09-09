@@ -112,7 +112,7 @@ function printReceipt() {
 
 function confirmPayment() {
     if (confirm('Are you sure you want to confirm this payment as completed?')) {
-        fetch('{{ url_for("main.confirm_payment", payment_id=payment.get("id")) }}', {
+        fetch('{{ url_for("payment.confirm_payment", payment_id=payment.get("id")) }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
