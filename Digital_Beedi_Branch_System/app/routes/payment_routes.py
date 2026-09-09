@@ -7,7 +7,7 @@ import json
 # reuse main blueprint and helpers to avoid duplicate blueprint registrations
 from app.routes.main_routes import bp as main_bp, admin_required, generate_receipt_number
 
-bp = main_bp
+bp = Blueprint("payment", __name__)
 
 @bp.route('/payment/<int:payment_id>/receipt')
 def payment_receipt(payment_id):
