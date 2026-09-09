@@ -1,4 +1,4 @@
-from flask import render_template, session, redirect, url_for, request, jsonify, current_app
+from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify, current_app
 from app.models.database import get_db
 from datetime import datetime
 import json
