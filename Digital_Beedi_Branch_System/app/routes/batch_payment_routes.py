@@ -94,7 +94,7 @@ def process_batch_payment():
             if worker_user and worker_user['user_id']:
                 send_worker_notification(worker_user['user_id'], 'Payment Received',
                                          f'Payment of ₹{payment_amount} processed via {payment_method}. Receipt: {receipt_number}',
-                                         url_for('main.payment_receipt', payment_id=payment_id))
+                                         url_for('payment.payment_receipt', payment_id=payment_id))
             
             # Integrate Razorpay payout for UPI and Bank Transfer
             if payment_method in ['UPI', 'Bank Transfer'] and current_app.config.get('RAZORPAY_KEY_ID'):
