@@ -1170,7 +1170,7 @@ def make_worker_payment(worker_id):
             if not (acc and ifsc):
                 flash('Account number and IFSC code are required for bank transfers', 'error')
                 return redirect(url_for('main.worker_details', worker_id=worker_id))
-            if not ifsc.strip().upper().replace(" ", "").match(r'^[A-Z]{4}0[A-Z0-9]{6}$'):
+            if not re.match(r'^[A-Z]{4}0[A-Z0-9]{6}$', ifsc.strip().upper().replace(" ", "")):
                 flash('Please enter a valid IFSC code (e.g., HDFC0000123)', 'error')
                 return redirect(url_for('main.worker_details', worker_id=worker_id))
             payment_details['account_number'] = acc
